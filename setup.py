@@ -4,7 +4,7 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="rpatterson.media",
+    name="mediary",
     version="0.1",
     author="Ross Patterson",
     author_email="me@rpatterson.net",
@@ -13,7 +13,7 @@ setuptools.setup(
         "keeping to the Unix DOTADIW philosophy"),
     long_description=long_description,
     long_description_content_type="text/x-rst",
-    url="https://github.com/rpatterson/rpatterson.media",
+    url="https://github.com/rpatterson/mediary",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python",
