@@ -14,7 +14,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/x-rst",
     url="https://github.com/rpatterson/mediary",
-    packages=setuptools.find_packages(),
+    package_dir={'': 'src'},
+    packages=setuptools.find_packages('src'),
     classifiers=[
         "Programming Language :: Python",
         "License :: OSI Approved :: GNU General Public License (GPL)",
