@@ -29,6 +29,6 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'mediary=mediary:main'],
+            'mediary=mediary.command:main'],
     },
 )
