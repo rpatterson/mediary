@@ -10,8 +10,15 @@ DOTADIW, "Do One Thing And Do It Well."  The goal is to break the necessary
 work down into tasks that are as discrete as possible so that they can be
 composed variously to serve different environments and workloads.  Examples of
 different ways to compose these tools may be provided but are not the only way
-to do it.  One of the many benefits of this approach is that it's much easier
-to execute steps in parallel for faster execution.
+to do it.  Just some of the many benefits of this approach are:
+
+- easier to execute steps in parallel for faster execution
+- easier to execute individual steps when they fail in special cases
+
+Until there's a clear reason not to, workflows will be supported by composing
+these utilities in process pipelines using ``|``.  The ``stdin`` for each
+utility should accept one media file per line/NULL, and each utility should output
+the next relevant media file one per line/NULL.
 
 When managing a media library, there are different phases that media progress
 through leading to full integration into the library:
