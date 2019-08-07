@@ -27,4 +27,8 @@ setuptools.setup(
         "Topic :: Multimedia",
         "Topic :: Utilities",
     ],
+    entry_points={
+        'console_scripts': [
+            'mediary=mediary:main'],
+    },
 )
