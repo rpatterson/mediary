@@ -2,9 +2,14 @@
 Convert media to the optimal format for the library.
 """
 
+import logging
 import argparse
 
+import ffmpeg
+
 from . import command
+
+logger = logging.getLogger(__name__)
 
 parser = command.subparsers.add_parser('convert', help=__doc__)
 parser.add_argument(
@@ -19,7 +24,9 @@ def convert(input_file, output_file):
     """
     Convert media to the optimal format for the library.
     """
-    return output_file
+    stream = ffmpeg.input(input_file.name)
+    stream = stream.output(output_file.name).overwrite_output()
+    return stream.run()
 
 parser.set_defaults(func=convert)
 
@@ -28,8 +35,10 @@ def main(args=None):
     """
     Convert media to the optimal format for the library.
     """
+    logging.basicConfig()
     args = parser.parse_args(args)
-    convert(**vars(args))
+    logger.info(
+        convert(**vars(args)))
 
 
 if __name__ == '__main__':

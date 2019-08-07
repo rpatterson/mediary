@@ -27,7 +27,10 @@ setuptools.setup(
         "Topic :: Multimedia",
         "Topic :: Utilities",
     ],
-    install_requires=['service-logging'],
+    install_requires=[
+        'service-logging',
+        'ffmpeg-python',
+    ],
     entry_points={
         'console_scripts': [
             'mediary=mediary.command:main'],

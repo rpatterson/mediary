@@ -1,2 +1,4 @@
 -e service-logging
+-e ffmpeg-python
+
 -e .
