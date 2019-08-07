@@ -1,0 +1,3 @@
+[submodule "service-logging"]
+	path = service-logging
+	url = git@github.com:rpatterson/service-logging.git

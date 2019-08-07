@@ -27,6 +27,7 @@ setuptools.setup(
         "Topic :: Multimedia",
         "Topic :: Utilities",
     ],
+    install_requires=['service-logging'],
     entry_points={
         'console_scripts': [
             'mediary=mediary.command:main'],
