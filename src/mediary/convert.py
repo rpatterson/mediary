@@ -39,7 +39,9 @@ def convert(
         # Most compatible stream type codecs
         'codec:v': 'h264', 'codec:a': 'aac', 'codec:s': 'webvtt',
         # Must include a stereo audio stream
-        'ac': '2'}
+        'ac': '2',
+        # Most compatible pixel format
+        'pix_fmt': 'yuv420p'}
 
     # Process each stream in the input
     input_probed = ffmpeg.probe(input_file.name)
@@ -78,6 +80,12 @@ def convert(
                     # in the ffmpeg codecs' list of encoders
                     codec_kwargs['output'][
                         stream_codec_kwarg] = required_kwargs[codec_kwarg]
+
+                if (
+                        'pix_fmt' in stream and
+                        required_kwargs.get('pix_fmt') != stream['pix_fmt']):
+                    codec_kwargs['output']['pix_fmt:{0}'.format(
+                        stream['index'])] = required_kwargs['pix_fmt']
 
             # Collect multiple sets of options for successive attempts
             multi_kwargs.extend(codecs_kwargs)
