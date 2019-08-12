@@ -33,6 +33,8 @@ def convert(
         'map': '0', 'copy_unknown': True,
         # Copy streams by default, IOW don't transcode unless we need to
         'codec': 'copy',
+        # Default to high quality, only when transcoding
+        'preset': 'slow', 'crf': '20', 'profile:v': 'high',
         # The MP4 container is the most compatible
         'f': 'mp4'}
     required_kwargs = {
