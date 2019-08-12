@@ -62,10 +62,11 @@ def main(args=None):
     """
     Convert media to the optimal format for the library.
     """
-    logging.basicConfig()
+    logging.basicConfig(level=logging.INFO)
     args = parser.parse_args(args)
-    logger.info(
-        convert(**vars(args)))
+    return convert(**{
+        key: value for key, value in vars(args).items()
+        if key not in {'level', 'func'}})
 
 
 if __name__ == '__main__':
