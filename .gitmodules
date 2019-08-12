@@ -3,4 +3,4 @@
 	url = https://github.com/rpatterson/ffmpeg-python.git
 [submodule "service-logging"]
 	path = service-logging
-	url = git@github.com:rpatterson/service-logging.git
+	url = https://github.com/rpatterson/service-logging.git
