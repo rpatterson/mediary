@@ -112,6 +112,8 @@ def convert(
             kwargs['output']['codec:{0}'.format(
                 stereo_stream_idx)] = required_kwargs['codec:a']
         streams_multi_kwargs.append([kwargs])
+        stream_resources.setdefault(
+            'disk', set()).add(stereo_stream_idx)
 
     # Normalize options to lists in order to support multiple instance of the
     # same option per-type below
