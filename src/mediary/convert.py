@@ -170,7 +170,7 @@ def main(args=None):
     """
     logging.basicConfig(level=logging.INFO)
     args = parser.parse_args(args)
-    return convert(**{
+    convert(**{
         key: value for key, value in vars(args).items()
         if key not in {'level', 'func'}})
 

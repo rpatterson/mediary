@@ -23,7 +23,7 @@ def main(args=None):
     """
     args = parser.parse_args(args)
     servicelogging.basicConfig(level=args.level)
-    return args.func(**{
+    args.func(**{
         key: value for key, value in vars(args).items()
         if key not in {'level', 'func'}})
 
