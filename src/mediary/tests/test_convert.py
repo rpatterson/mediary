@@ -17,8 +17,8 @@ class TestMediaryConvert(unittest.TestCase):
 
     INPUT_ARGS = [
         'ffmpeg',
-        '-f', 'lavfi', '-i', 'testsrc=duration=2:size=4k:rate=60',
-        '-f', 'lavfi', '-i', 'sine=frequency=220:beep_factor=4:duration=2']
+        '-f', 'lavfi', '-i', 'testsrc=duration=1',
+        '-f', 'lavfi', '-i', 'sine=duration=1']
 
     INPUT_NOOP_ARGS = ['-ac', '2']
     INPUT_NOOP = os.path.join(os.path.dirname(__file__), 'in.mp4')
