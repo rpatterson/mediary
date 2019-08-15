@@ -30,6 +30,7 @@ setuptools.setup(
     install_requires=[
         'service-logging',
     ],
+    test_suite="mediary.tests",
     entry_points={
         'console_scripts': [
             'mediary=mediary.command:main'],
