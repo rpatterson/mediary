@@ -29,7 +29,6 @@ setuptools.setup(
     ],
     install_requires=[
         'service-logging',
-        'ffmpeg-python',
     ],
     entry_points={
         'console_scripts': [

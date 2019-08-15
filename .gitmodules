@@ -1,6 +1,3 @@
-[submodule "ffmpeg-python"]
-	path = ffmpeg-python
-	url = https://github.com/rpatterson/ffmpeg-python.git
 [submodule "service-logging"]
 	path = service-logging
 	url = https://github.com/rpatterson/service-logging.git
