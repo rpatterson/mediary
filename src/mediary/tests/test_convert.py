@@ -24,19 +24,28 @@ class TestMediaryConvert(unittest.TestCase):
         """
         if not os.path.exists(class_.INPUT_FILE):
             subprocess.check_call([
-                'ffmpeg', '-f', 'lavfi',
-                '-i', 'testsrc=duration=1:size=4k:rate=60',
-                '-pix_fmt', 'yuv420p',
+                'ffmpeg',
+                '-f', 'lavfi',
+                '-i', 'testsrc=duration=2:size=4k:rate=60',
+                '-f', 'lavfi',
+                '-i', 'sine=frequency=220:beep_factor=4:duration=2',
+                '-ac', '2',
                 class_.INPUT_FILE])
 
-    def test_convert_basic(self):
+    def test_convert_copy(self):
         """
-        Test that the tests run.
+        Videos that meet the requirements aren't processed.
         """
         with (
                 open(self.INPUT_FILE)) as input_file, (
                 tempfile.NamedTemporaryFile(mode='w')) as output_file:
-            convert.convert(input_file, output_file)
+            args = convert.convert(input_file, output_file)
+            self.assertEqual(
+                os.stat(output_file.name).st_size, 0,
+                'Output for video with no conversion written to')
+        self.assertIn(
+            '-codec copy', ' '.join(args),
+            'Wrong return type for no proecessing required')
 
 
 if __name__ == '__main__':

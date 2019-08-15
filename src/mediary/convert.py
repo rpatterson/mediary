@@ -38,7 +38,7 @@ def convert(
         '-f', 'mp4', '-movflags', 'faststart']
     required_kwargs = collections.OrderedDict([
         # Most compatible stream type codecs
-        ('-codec:v', 'libx264'), ('-codec:a', 'aac'), ('-codec:s', 'webvtt'),
+        ('-codec:v', 'h264'), ('-codec:a', 'aac'), ('-codec:s', 'webvtt'),
         # Must include a stereo audio stream
         ('-ac', '2'),
         # Most compatible pixel format
@@ -113,15 +113,16 @@ def convert(
         stream_resources.setdefault(
             'disk', set()).add(stereo_stream_idx)
 
-    if stream_resources:
-        logger.info('Processing requires resources: %s', stream_resources)
-    else:
-        logger.info('No processing required')
     args = (
         ['ffmpeg', '-hide_banner'] +
         input_args + ['-i', input_file.name] +
         output_args + [output_file.name, '-y'])
     cmd_line = ' '.join(args)
+    if not stream_resources:
+        logger.info('No processing required')
+        return args
+
+    logger.info('Processing requires resources: %s', stream_resources)
     logger.info('Running: %s', cmd_line)
     try:
         subprocess.check_call(args)
