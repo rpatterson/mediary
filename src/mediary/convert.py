@@ -124,12 +124,8 @@ def convert(
 
     logger.info('Processing requires resources: %s', stream_resources)
     logger.info('Running: %s', cmd_line)
-    try:
-        subprocess.check_call(args)
-    except subprocess.CalledProcessError:
-        logger.exception('Failed: %s', ' '.join(args))
-    else:
-        return args
+    subprocess.check_call(args)
+    return args
 
 parser.set_defaults(func=convert)
 
