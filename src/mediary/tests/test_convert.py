@@ -4,6 +4,7 @@ Tests for mediary conversion tools.
 
 import os
 import tempfile
+import subprocess
 import unittest
 
 from .. import convert
@@ -15,6 +16,18 @@ class TestMediaryConvert(unittest.TestCase):
     """
 
     INPUT_FILE = os.path.join(os.path.dirname(__file__), 'in.mp4')
+
+    @classmethod
+    def setUpClass(class_):
+        """
+        Conditionally generate a test input video.
+        """
+        if not os.path.exists(class_.INPUT_FILE):
+            subprocess.check_call([
+                'ffmpeg', '-f', 'lavfi',
+                '-i', 'testsrc=duration=1:size=4k:rate=60',
+                '-pix_fmt', 'yuv420p',
+                class_.INPUT_FILE])
 
     def test_convert_basic(self):
         """
