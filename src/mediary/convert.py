@@ -26,23 +26,23 @@ def convert(
     """
     Convert media to the optimal format for the library.
     """
-    input_kwargs = collections.OrderedDict()
-    output_kwargs = collections.OrderedDict([
+    input_args = []
+    output_args = [
         # Include all streams by default
-        ('map', '0'), ('copy_unknown', True),
+        '-map', '0', '-copy_unknown',
         # Copy streams by default, IOW don't transcode unless we need to
-        ('codec', 'copy'),
+        '-codec', 'copy',
         # Default to high quality, only when transcoding
-        ('preset', 'slow'), ('crf', '20'), ('profile:v', 'high'),
+        '-preset', 'slow', '-crf', '20', '-profile:v', 'high',
         # The MP4 container is the most compatible
-        ('f', 'mp4'), ('movflags', 'faststart')])
+        '-f', 'mp4', '-movflags', 'faststart']
     required_kwargs = collections.OrderedDict([
         # Most compatible stream type codecs
-        ('codec:v', 'libx264'), ('codec:a', 'aac'), ('codec:s', 'webvtt'),
+        ('-codec:v', 'libx264'), ('-codec:a', 'aac'), ('-codec:s', 'webvtt'),
         # Must include a stereo audio stream
-        ('ac', '2'),
+        ('-ac', '2'),
         # Most compatible pixel format
-        ('pix_fmt', 'yuv420p')])
+        ('-pix_fmt', 'yuv420p')])
 
     # Process each stream in the input
     probe_out = subprocess.check_output([
@@ -56,8 +56,8 @@ def convert(
     for stream in input_probed['streams']:
         codec_type = stream['codec_type']
         stream_type = codec_type[0]
-        codec_kwarg = 'codec:' + stream_type
-        stream_codec_kwarg = 'codec:{0}'.format(stream['index'])
+        codec_opt = '-codec:' + stream_type
+        stream_codec_opt = '-codec:{0}'.format(stream['index'])
 
         # Gather streams by type for type specific processing later
         stream_types.setdefault(stream['codec_type'], []).append(stream)
@@ -69,15 +69,15 @@ def convert(
 
         # Transcode if the required codec is  different from the input
         if (
-                codec_kwarg in required_kwargs and
-                stream['codec_name'] != required_kwargs[codec_kwarg]):
-            output_kwargs[stream_codec_kwarg] = required_kwargs[codec_kwarg]
+                codec_opt in required_kwargs and
+                stream['codec_name'] != required_kwargs[codec_opt]):
+            output_args.extend((stream_codec_opt, required_kwargs[codec_opt]))
 
             if (
                     'pix_fmt' in required_kwargs and 'pix_fmt' in stream and
                     required_kwargs['pix_fmt'] != stream['pix_fmt']):
-                output_kwargs['pix_fmt:{0}'.format(
-                    stream['index'])] = required_kwargs['pix_fmt']
+                output_args.extend(('pix_fmt:{0}'.format(
+                    stream['index']), required_kwargs['pix_fmt']))
 
             # Note which system process this command will be bound by.
             # Any remuxing will be disk itensive regardless of whether there
@@ -88,18 +88,6 @@ def convert(
                 # Transcoding video is processor bound
                 stream_resources.setdefault(
                     'processor', set()).add(stream['index'])
-
-    # Normalize options to lists in order to support multiple instance of the
-    # same option per-type below
-    input_args = []
-    output_args = []
-    for kwargs, args in (
-            (input_kwargs, input_args), (output_kwargs, output_args)):
-        for option, value in kwargs.items():
-            if isinstance(value, bool):
-                args.append('-{0}'.format(option))
-            else:
-                args.extend(('-{0}'.format(option), value))
 
     # If there isn't a stereo audio stream, copy the first stream with the
     # most channels and downmix it to stereo
