@@ -21,6 +21,17 @@ parser.add_argument(
     help='The file to write the converted media to')
 
 
+def probe(input_file):
+    """
+    Probe the input file with ffprobe and return the JSON deserialized.
+    """
+    probe_out = subprocess.check_output([
+        'ffprobe', '-show_format', '-show_streams', '-of', 'json',
+        input_file.name])
+    return json.loads(
+        probe_out, object_pairs_hook=collections.OrderedDict)
+
+
 def convert(
         input_file, output_file):
     """
@@ -45,14 +56,10 @@ def convert(
         ('-pix_fmt', 'yuv420p')])
 
     # Process each stream in the input
-    probe_out = subprocess.check_output([
-        'ffprobe', '-show_format', '-show_streams', '-of', 'json',
-        input_file.name])
-    input_probed = json.loads(
-        probe_out, object_pairs_hook=collections.OrderedDict)
     stream_types = dict()
     channels_streams = dict()
     stream_resources = {}
+    input_probed = probe(input_file)
     for stream in input_probed['streams']:
         codec_type = stream['codec_type']
         stream_type = codec_type[0]
@@ -74,10 +81,10 @@ def convert(
             output_args.extend((stream_codec_opt, required_kwargs[codec_opt]))
 
             if (
-                    'pix_fmt' in required_kwargs and 'pix_fmt' in stream and
-                    required_kwargs['pix_fmt'] != stream['pix_fmt']):
-                output_args.extend(('pix_fmt:{0}'.format(
-                    stream['index']), required_kwargs['pix_fmt']))
+                    '-pix_fmt' in required_kwargs and 'pix_fmt' in stream and
+                    required_kwargs['-pix_fmt'] != stream['pix_fmt']):
+                output_args.extend(('-pix_fmt:{0}'.format(
+                    stream['index']), required_kwargs['-pix_fmt']))
 
             # Note which system process this command will be bound by.
             # Any remuxing will be disk itensive regardless of whether there
@@ -91,7 +98,7 @@ def convert(
 
     # If there isn't a stereo audio stream, copy the first stream with the
     # most channels and downmix it to stereo
-    required_channels = required_kwargs.get('ac')
+    required_channels = required_kwargs.get('-ac')
     if (
             required_channels is not None and
             required_channels not in channels_streams):
@@ -107,9 +114,9 @@ def convert(
         output_args.extend((
             '-map', '0:1',
             '-ac:{0}'.format(stereo_stream_idx), required_channels))
-        if 'codec:a' in required_kwargs:
+        if '-codec:a' in required_kwargs:
             output_args.extend(('-codec:{0}'.format(
-                stereo_stream_idx), required_kwargs['codec:a']))
+                stereo_stream_idx), required_kwargs['-codec:a']))
         stream_resources.setdefault(
             'disk', set()).add(stereo_stream_idx)
 
