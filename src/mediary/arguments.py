@@ -2,7 +2,38 @@
 Command-line option and argument handling.
 """
 
+import os
 import argparse
+
+
+class ArgsFromFileAction(argparse._AppendAction):
+    """
+    Collect arguments from files like argparse's `fromfile_prefix_chars`.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        """
+        Read args from the file and collect into the namespace.
+        """
+        if not getattr(self, 'reset_dest', False):
+            setattr(namespace, self.dest, [])
+            self.reset_dest = True
+        items = getattr(namespace, self.dest)
+        for value in values:
+            arg_strings = parser._read_args_from_files([
+                parser.fromfile_prefix_chars + value])
+        items.extend(arg_strings)
+        setattr(namespace, self.dest, items)
+
+
+def parse_arg_set(arg_set):
+    """
+    Load an argument set from the predefined package sets or as a file.
+    """
+    if os.path.exists(arg_set):
+        return arg_set
+    else:
+        return os.path.join(os.path.dirname(__file__), arg_set)
 
 
 def generate_parser(parser=None, args=None, **kwargs):

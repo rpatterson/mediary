@@ -8,11 +8,14 @@ import logging
 import argparse
 import subprocess
 
+from . import arguments
 from . import command
 
 logger = logging.getLogger(__name__)
 
-parser = command.subparsers.add_parser('convert', help=__doc__)
+parser = command.subparsers.add_parser(
+    'convert', help=__doc__, fromfile_prefix_chars='@')
+
 parser.add_argument(
     'input_file', type=argparse.FileType('r'),
     help='The media file to convert')
@@ -20,39 +23,77 @@ parser.add_argument(
     'output_file', type=argparse.FileType('w'),
     help='The file to write the converted media to')
 
+# Options for preserving as much of the original file as possible and doing
+# as little transcoding as possible:
+# - Include all streams by default
+# - Copy streams by default, IOW don't transcode unless we need to
+PRESERVE_ARGS = parser._read_args_from_files([
+    parser.fromfile_prefix_chars + arguments.parse_arg_set(
+        'ffmpeg-preserve.txt')])
+
+# Options for producing output files that are as compatible as possible
+# across various players: HTML 5, iOS, Android, etc.  Useful to avoiding
+# transcoding when being streamed:
+# - Most compatible codecs
+# - Must include a stereo audio stream
+# - Most compatible pixel format
+# - The most compatible container
+# - Enable streaming quickly
+COMPATIBLE_ARGS = parser._read_args_from_files([
+    parser.fromfile_prefix_chars + arguments.parse_arg_set(
+        'ffmpeg-compatible.txt')])
+# Sacrifice some compatibility for outputs that are as compressed as possible.
+COMPACT_ARGS = parser._read_args_from_files([
+    parser.fromfile_prefix_chars + arguments.parse_arg_set(
+        'ffmpeg-compact.txt')])
+
+# Options for a reasonable trade-off of longer encodng time for higher quality
+# for resulting file size:
+# - Default to high quality, only when transcoding
+QUALITY_ARGS = parser._read_args_from_files([
+    parser.fromfile_prefix_chars + arguments.parse_arg_set(
+        'ffmpeg-quality.txt')])
+
+parser.add_argument(
+    '--output-args',
+    type=arguments.parse_arg_set, action=arguments.ArgsFromFileAction,
+    default=PRESERVE_ARGS + QUALITY_ARGS, nargs='+', help="""
+The name one of the predefined sets of arguments for ffmpeg or a file
+containing ffmpeg arguments, one per line.  Will be used as the output
+defaults. May be given multiple times to combine multiple sets.
+(default: %(default)s)""")
+parser.add_argument(
+    '--required-args',
+    type=arguments.parse_arg_set, action=arguments.ArgsFromFileAction,
+    default=COMPATIBLE_ARGS, nargs='+', help="""
+The name one of the predefined sets of arguments for ffmpeg or a file
+containing ffmpeg arguments, one per line.  Will be used as output
+requirements to determine whether to transcode or remux the input. May be
+given multiple times to combine multiple sets.
+(default: %(default)s)""")
+
+
+FFPROBE_ARGS = ['ffprobe', '-show_format', '-show_streams', '-of', 'json']
+
 
 def probe(input_file):
     """
     Probe the input file with ffprobe and return the JSON deserialized.
     """
-    probe_out = subprocess.check_output([
-        'ffprobe', '-show_format', '-show_streams', '-of', 'json',
-        input_file.name])
+    probe_out = subprocess.check_output(FFPROBE_ARGS + [input_file.name])
     return json.loads(
         probe_out, object_pairs_hook=collections.OrderedDict)
 
 
 def convert(
-        input_file, output_file):
+        input_file, output_file,
+        output_args=parser.get_default('output_args'),
+        required_args=parser.get_default('required_args')):
     """
     Convert media to the optimal format for the library.
     """
-    output_args = [
-        # Include all streams by default
-        '-map', '0', '-copy_unknown',
-        # Copy streams by default, IOW don't transcode unless we need to
-        '-codec', 'copy',
-        # Default to high quality, only when transcoding
-        '-preset', 'slow', '-crf', '20', '-profile:v', 'high',
-        # The MP4 container is the most compatible
-        '-f', 'mp4', '-movflags', 'faststart']
-    required_kwargs = collections.OrderedDict([
-        # Most compatible stream type codecs
-        ('-codec:v', 'h264'), ('-codec:a', 'aac'), ('-codec:s', 'webvtt'),
-        # Must include a stereo audio stream
-        ('-ac', '2'),
-        # Most compatible pixel format
-        ('-pix_fmt', 'yuv420p')])
+    # Process required ffmpeg arguments for lookup
+    required_kwargs = vars(arguments.generate_parser(args=required_args)[1])
 
     # Process each stream in the input
     stream_types = dict()
@@ -62,7 +103,7 @@ def convert(
     for stream in input_probed['streams']:
         codec_type = stream['codec_type']
         stream_type = codec_type[0]
-        codec_opt = '-codec:' + stream_type
+        codec_kwarg = 'codec:' + stream_type
         stream_codec_opt = '-codec:{0}'.format(stream['index'])
 
         # Gather streams by type for type specific processing later
@@ -75,15 +116,16 @@ def convert(
 
         # Transcode if the required codec is  different from the input
         if (
-                codec_opt in required_kwargs and
-                stream['codec_name'] != required_kwargs[codec_opt]):
-            output_args.extend((stream_codec_opt, required_kwargs[codec_opt]))
+                codec_kwarg in required_kwargs and
+                stream['codec_name'] != required_kwargs[codec_kwarg]):
+            output_args.extend((
+                stream_codec_opt, required_kwargs[codec_kwarg]))
 
             if (
-                    '-pix_fmt' in required_kwargs and 'pix_fmt' in stream and
-                    required_kwargs['-pix_fmt'] != stream['pix_fmt']):
+                    'pix_fmt' in required_kwargs and 'pix_fmt' in stream and
+                    required_kwargs['pix_fmt'] != stream['pix_fmt']):
                 output_args.extend(('-pix_fmt:{0}'.format(
-                    stream['index']), required_kwargs['-pix_fmt']))
+                    stream['index']), required_kwargs['pix_fmt']))
 
             # Note which system process this command will be bound by.
             # Any remuxing will be disk itensive regardless of whether there
@@ -97,7 +139,7 @@ def convert(
 
     # If there isn't a stereo audio stream, copy the first stream with the
     # most channels and downmix it to stereo
-    required_channels = required_kwargs.get('-ac')
+    required_channels = required_kwargs.get('ac')
     if (
             required_channels is not None and
             required_channels not in channels_streams):
@@ -113,9 +155,9 @@ def convert(
         output_args.extend((
             '-map', '0:1',
             '-ac:{0}'.format(stereo_stream_idx), required_channels))
-        if '-codec:a' in required_kwargs:
+        if 'codec:a' in required_kwargs:
             output_args.extend(('-codec:{0}'.format(
-                stereo_stream_idx), required_kwargs['-codec:a']))
+                stereo_stream_idx), required_kwargs['codec:a']))
         stream_resources.setdefault(
             'disk', set()).add(stereo_stream_idx)
 
@@ -142,7 +184,7 @@ def main(args=None):
     """
     logging.basicConfig(level=logging.INFO)
     args = parser.parse_args(args)
-    convert(**{
+    return convert(**{
         key: value for key, value in vars(args).items()
         if key not in {'level', 'func'}})
 

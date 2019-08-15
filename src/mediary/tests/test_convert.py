@@ -93,6 +93,27 @@ class TestMediaryConvert(unittest.TestCase):
             output_probed['streams'][2]['channels'], 2,
             'Wrong number of added audio stereo stream channels')
 
+    def test_convert_arg_sets(self):
+        """
+        Support Passing in ffmpeg argument sets.
+        """
+        with (
+                open(self.INPUT_NOOP)) as input_file, (
+                tempfile.NamedTemporaryFile(mode='w')) as output_file:
+            args = convert.main(args=[
+                input_file.name, output_file.name,
+                '--output-args', 'ffmpeg-preserve.txt',
+                '--required-args', os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    'ffmpeg-compact.txt')])
+
+        self.assertNotIn(
+            '-codec:0 h264', ' '.join(args),
+            'Wrong codec for selected arg set.')
+        self.assertIn(
+            '-codec:0 hevc', ' '.join(args),
+            'Wrong codec for selected arg set.')
+
 
 if __name__ == '__main__':
     unittest.main()

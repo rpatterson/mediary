@@ -1,0 +1,8 @@
+-codec:v
+hevc
+-codec:a
+aac
+-codec:s
+webvtt
+-movflags
++faststart

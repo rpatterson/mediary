@@ -1,0 +1,7 @@
+-map
+0
+-copy_unknown
+-codec
+copy
+-f
+mp4

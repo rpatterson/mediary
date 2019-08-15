@@ -1,0 +1,6 @@
+-preset
+slow
+-crf
+20
+-profile:v
+high

@@ -1,0 +1,12 @@
+-codec:v
+h264
+-pix_fmt
+yuv420p
+-codec:a
+aac
+-codec:s
+webvtt
+-ac
+2
+-movflags
++faststart
