@@ -37,7 +37,6 @@ def convert(
     """
     Convert media to the optimal format for the library.
     """
-    input_args = []
     output_args = [
         # Include all streams by default
         '-map', '0', '-copy_unknown',
@@ -122,7 +121,7 @@ def convert(
 
     args = (
         ['ffmpeg', '-hide_banner'] +
-        input_args + ['-i', input_file.name] +
+        ['-i', input_file.name] +
         output_args + [output_file.name, '-y'])
     cmd_line = ' '.join(args)
     if not stream_resources:
