@@ -3,6 +3,7 @@ Tests for mediary conversion tools.
 """
 
 import os
+import functools
 import tempfile
 import subprocess
 import unittest
@@ -38,17 +39,22 @@ class TestMediaryConvert(unittest.TestCase):
                 subprocess.check_call(
                     class_.INPUT_ARGS + input_args + [input_file])
 
+    def setUp(self):
+        """
+        Create a temporary file to output to.
+        """
+        self.output_file = tempfile.NamedTemporaryFile(
+            mode='w', delete=False).name
+        self.addCleanup(functools.partial(os.remove, self.output_file))
+
     def test_convert_copy(self):
         """
         Videos that meet the requirements aren't processed.
         """
-        with (
-                open(self.INPUT_NOOP)) as input_file, (
-                tempfile.NamedTemporaryFile(mode='w')) as output_file:
-            args = convert.convert(input_file, output_file)
-            self.assertEqual(
-                os.stat(output_file.name).st_size, 0,
-                'Output for video with no conversion written to')
+        args = convert.convert(self.INPUT_NOOP, self.output_file)
+        self.assertEqual(
+            os.stat(self.output_file).st_size, 0,
+            'Output for video with no conversion written to')
 
         self.assertIn(
             '-codec copy', ' '.join(args),
@@ -61,14 +67,11 @@ class TestMediaryConvert(unittest.TestCase):
         """
         Videos that require conversion are transcoded.
         """
-        with (
-                open(self.INPUT_HEVC)) as input_file, (
-                tempfile.NamedTemporaryFile(mode='w')) as output_file:
-            args = convert.convert(input_file, output_file)
-            self.assertTrue(
-                os.stat(output_file.name).st_size,
-                'Output for transacted video not written to')
-            output_probed = convert.probe(output_file)
+        args = convert.convert(self.INPUT_HEVC, self.output_file)
+        self.assertTrue(
+            os.stat(self.output_file).st_size,
+            'Output for transacted video not written to')
+        output_probed = convert.probe(self.output_file)
 
         self.assertIn(
             '-codec:0 h264', ' '.join(args),
@@ -97,15 +100,12 @@ class TestMediaryConvert(unittest.TestCase):
         """
         Support Passing in ffmpeg argument sets.
         """
-        with (
-                open(self.INPUT_NOOP)) as input_file, (
-                tempfile.NamedTemporaryFile(mode='w')) as output_file:
-            args = convert.main(args=[
-                input_file.name, output_file.name,
-                '--output-args', 'ffmpeg-preserve.txt',
-                '--required-args', os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    'ffmpeg-compact.txt')])
+        args = convert.main(args=[
+            self.INPUT_NOOP, self.output_file,
+            '--output-args', 'ffmpeg-preserve.txt',
+            '--required-args', os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                'ffmpeg-compact.txt')])
 
         self.assertNotIn(
             '-codec:0 h264', ' '.join(args),

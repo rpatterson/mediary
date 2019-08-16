@@ -6,6 +6,19 @@ import os
 import argparse
 
 
+class FileNameType(argparse.FileType):
+    """
+    Ensure the file can be opened and return it's name.
+    """
+
+    def __call__(self, string):
+        """
+        Return the name from the opened file and close it.
+        """
+        with super(FileNameType, self).__call__(string) as opened:
+            return opened.name
+
+
 class ArgsFromFileAction(argparse._AppendAction):
     """
     Collect arguments from files like argparse's `fromfile_prefix_chars`.

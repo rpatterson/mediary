@@ -17,10 +17,10 @@ parser = command.subparsers.add_parser(
     'convert', help=__doc__, fromfile_prefix_chars='@')
 
 parser.add_argument(
-    'input_file', type=argparse.FileType('r'),
+    'input_file', type=arguments.FileNameType('r'),
     help='The media file to convert')
 parser.add_argument(
-    'output_file', type=argparse.FileType('w'),
+    'output_file', type=arguments.FileNameType('w'),
     help='The file to write the converted media to')
 
 # Options for preserving as much of the original file as possible and doing
@@ -80,7 +80,7 @@ def probe(input_file):
     """
     Probe the input file with ffprobe and return the JSON deserialized.
     """
-    probe_out = subprocess.check_output(FFPROBE_ARGS + [input_file.name])
+    probe_out = subprocess.check_output(FFPROBE_ARGS + [input_file])
     return json.loads(
         probe_out, object_pairs_hook=collections.OrderedDict)
 
@@ -163,8 +163,8 @@ def convert(
 
     args = (
         ['ffmpeg', '-hide_banner'] +
-        ['-i', input_file.name] +
-        output_args + [output_file.name, '-y'])
+        ['-i', input_file] +
+        output_args + [output_file, '-y'])
     cmd_line = ' '.join(args)
     if not stream_resources:
         logger.info('No processing required')
