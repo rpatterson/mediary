@@ -75,6 +75,8 @@ given multiple times to combine multiple sets.
 
 FFPROBE_ARGS = ['ffprobe', '-show_format', '-show_streams', '-of', 'json']
 
+SUBTITLE_BITMAP_CODECS = {'hdmv_pgs_subtitle', 'dvd_subtitle', 'dvb_subtitle'}
+
 
 def probe(input_file):
     """
@@ -118,6 +120,21 @@ def convert(
         if (
                 codec_kwarg in required_kwargs and
                 stream['codec_name'] != required_kwargs[codec_kwarg]):
+
+            # Check if the subtitle codec text vs bitmap types match
+            if (
+                    codec_type == 'subtitle' and (
+                        (stream['codec_name'] in
+                         SUBTITLE_BITMAP_CODECS) !=
+                        (required_kwargs[codec_kwarg] in
+                         SUBTITLE_BITMAP_CODECS))):
+                logger.error(
+                    'Subtitle encoding currently only possible from text to '
+                    'text or bitmap to bitmap: Stream #0:%s (%S -> %S)',
+                    stream['index'],
+                    stream['codec_name'], required_kwargs[codec_kwarg])
+                continue
+
             output_args.extend((
                 stream_codec_opt, required_kwargs[codec_kwarg]))
 
