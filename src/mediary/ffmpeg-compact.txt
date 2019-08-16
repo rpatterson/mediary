@@ -3,6 +3,6 @@ hevc
 -codec:a
 aac
 -codec:s
-webvtt
+mov_text
 -movflags
 +faststart

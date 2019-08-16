@@ -5,7 +5,7 @@ yuv420p
 -codec:a
 aac
 -codec:s
-webvtt
+mov_text
 -ac
 2
 -movflags
