@@ -6,7 +6,6 @@ import os
 import json
 import collections
 import logging
-import argparse
 import subprocess
 
 from . import arguments
@@ -15,7 +14,7 @@ from . import command
 logger = logging.getLogger(__name__)
 
 parser = command.subparsers.add_parser(
-    'convert', help=__doc__, fromfile_prefix_chars='@')
+    'convert', description=__doc__, help=__doc__, fromfile_prefix_chars='@')
 
 parser.add_argument(
     'input_file', type=arguments.FileNameType('r'),

@@ -14,7 +14,9 @@ parser = argparse.ArgumentParser(description=mediary.__doc__)
 parser.add_argument(
     '--level', default=logging.INFO,
     help='The level of messages to log at or above')
-subparsers = parser.add_subparsers()
+subparsers = parser.add_subparsers(
+    title='subcommands', description='valid subcommands',
+    help='additional help')
 
 
 def main(args=None):
