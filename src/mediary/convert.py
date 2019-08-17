@@ -76,6 +76,11 @@ given multiple times to combine multiple sets.
 FFPROBE_ARGS = ['ffprobe', '-show_format', '-show_streams', '-of', 'json']
 
 SUBTITLE_BITMAP_CODECS = {'hdmv_pgs_subtitle', 'dvd_subtitle', 'dvb_subtitle'}
+FORMAT_CODECS = dict(subtitle={
+    'mp4': ['mov_text'],
+    'mov': ['mov_text'],
+    'mkv': ['srt', 'ass', 'ssa'],
+})
 
 
 def probe(input_file):
@@ -102,11 +107,15 @@ def convert(
     channels_streams = dict()
     stream_resources = {}
     input_probed = probe(input_file)
+    output_format = required_kwargs.get('f')
+    output_stream_count = len(input_probed['streams'])
     for stream in input_probed['streams']:
         codec_type = stream['codec_type']
         stream_type = codec_type[0]
         codec_kwarg = 'codec:' + stream_type
         stream_codec_opt = '-codec:{0}'.format(stream['index'])
+        stream_output_codec = required_kwargs.get(
+            codec_kwarg, stream['codec_name'])
 
         # Gather streams by type for type specific processing later
         stream_types.setdefault(stream['codec_type'], []).append(stream)
@@ -116,28 +125,28 @@ def convert(
             channels_streams.setdefault(
                 str(stream['channels']), []).append(stream['index'])
 
-        # Transcode if the required codec is  different from the input
+        # Check if the subtitle codec text vs bitmap types match
         if (
+                codec_type == 'subtitle' and (
+                    (stream['codec_name'] in SUBTITLE_BITMAP_CODECS) !=
+                    (stream_output_codec in SUBTITLE_BITMAP_CODECS))):
+            stream_output_codec = stream['codec_name']
+            logger.warn(
+                'Subtitle encoding currently only possible '
+                'from text to text or bitmap to bitmap: '
+                'Stream #0:%s (%s -> %s)', stream['index'],
+                stream['codec_name'], required_kwargs[codec_kwarg])
+
+        # Transcode if the required codec is  different from the input
+        elif (
                 codec_kwarg in required_kwargs and
-                stream['codec_name'] != required_kwargs[codec_kwarg]):
+                stream['codec_name'] != stream_output_codec):
 
-            # Check if the subtitle codec text vs bitmap types match
-            if (
-                    codec_type == 'subtitle' and (
-                        (stream['codec_name'] in
-                         SUBTITLE_BITMAP_CODECS) !=
-                        (required_kwargs[codec_kwarg] in
-                         SUBTITLE_BITMAP_CODECS))):
-                logger.error(
-                    'Subtitle encoding currently only possible from text to '
-                    'text or bitmap to bitmap: Stream #0:%s (%S -> %S)',
-                    stream['index'],
-                    stream['codec_name'], required_kwargs[codec_kwarg])
-                continue
-
+            # Override the copy default for this stream
             output_args.extend((
                 stream_codec_opt, required_kwargs[codec_kwarg]))
 
+            # Setting the pixel format only makes sense for video streams
             if (
                     'pix_fmt' in required_kwargs and 'pix_fmt' in stream and
                     required_kwargs['pix_fmt'] != stream['pix_fmt']):
@@ -154,6 +163,22 @@ def convert(
                 stream_resources.setdefault(
                     'processor', set()).add(stream['index'])
 
+        # Drop streams that can't be copied into the container format.
+        if (
+                output_format is not None and
+                codec_type in FORMAT_CODECS and
+                output_format in FORMAT_CODECS[codec_type] and
+                stream_output_codec not in
+                FORMAT_CODECS[codec_type][output_format]):
+            output_args.extend(['-map', '-0:{0}'.format(stream['index'])])
+            output_stream_count -= 1
+            logger.warn(
+                'Could not find tag for codec %s, '
+                'dropping stream #%s, codec not currently supported '
+                'in container format %s',
+                stream_output_codec, stream['index'], output_format)
+            continue
+
     # If there isn't a stereo audio stream, copy the first stream with the
     # most channels and downmix it to stereo
     required_channels = required_kwargs.get('ac')
@@ -168,7 +193,7 @@ def convert(
                     int(audio_stream['channels']) >
                     int(stereo_source_stream['channels'])):
                 stereo_source_stream = audio_stream
-        stereo_stream_idx = len(input_probed['streams'])
+        stereo_stream_idx = output_stream_count
         output_args.extend((
             '-map', '0:1',
             '-ac:{0}'.format(stereo_stream_idx), required_channels))

@@ -44,7 +44,7 @@ class TestMediaryConvert(unittest.TestCase):
         Create a temporary file to output to.
         """
         self.output_file = tempfile.NamedTemporaryFile(
-            mode='w', delete=False).name
+            mode='w', suffix='.mp4', delete=False).name
         self.addCleanup(functools.partial(os.remove, self.output_file))
 
     def test_convert_copy(self):

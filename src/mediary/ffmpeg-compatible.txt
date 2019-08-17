@@ -8,5 +8,7 @@ aac
 mov_text
 -ac
 2
+-f
+mp4
 -movflags
 +faststart

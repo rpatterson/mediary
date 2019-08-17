@@ -3,5 +3,3 @@
 -copy_unknown
 -codec
 copy
--f
-mp4

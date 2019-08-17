@@ -4,5 +4,7 @@ hevc
 aac
 -codec:s
 mov_text
+-f
+mp4
 -movflags
 +faststart
