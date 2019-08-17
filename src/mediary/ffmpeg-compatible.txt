@@ -10,5 +10,7 @@ mov_text
 2
 -f
 mp4
+-max_muxing_queue_size
+1024
 -movflags
 +faststart
