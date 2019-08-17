@@ -2,6 +2,7 @@
 Convert media to the optimal format for the library.
 """
 
+import os
 import json
 import collections
 import logging
@@ -72,8 +73,12 @@ requirements to determine whether to transcode or remux the input. May be
 given multiple times to combine multiple sets.
 (default: %(default)s)""")
 
+parser.add_argument(
+    '--ffmpeg', default='ffmpeg', help="""
+The ffmpeg executable to use for converting media. (default: %(default)s)""")
 
-FFPROBE_ARGS = ['ffprobe', '-show_format', '-show_streams', '-of', 'json']
+
+FFPROBE_ARGS = ['-show_format', '-show_streams', '-of', 'json']
 
 SUBTITLE_BITMAP_CODECS = {'hdmv_pgs_subtitle', 'dvd_subtitle', 'dvb_subtitle'}
 FORMAT_CODECS = dict(subtitle={
@@ -83,11 +88,12 @@ FORMAT_CODECS = dict(subtitle={
 })
 
 
-def probe(input_file):
+def probe(input_file, ffprobe='ffprobe'):
     """
     Probe the input file with ffprobe and return the JSON deserialized.
     """
-    probe_out = subprocess.check_output(FFPROBE_ARGS + [input_file])
+    probe_out = subprocess.check_output(
+        [ffprobe] + FFPROBE_ARGS + [input_file])
     return json.loads(
         probe_out, object_pairs_hook=collections.OrderedDict)
 
@@ -95,18 +101,26 @@ def probe(input_file):
 def convert(
         input_file, output_file,
         output_args=parser.get_default('output_args'),
-        required_args=parser.get_default('required_args')):
+        required_args=parser.get_default('required_args'),
+        ffmpeg=parser.get_default('ffmpeg')):
     """
     Convert media to the optimal format for the library.
     """
     # Process required ffmpeg arguments for lookup
     required_kwargs = vars(arguments.generate_parser(args=required_args)[1])
 
+    ffmpeg_dir, ffmpeg_exe = os.path.split(ffmpeg)
+    ffmpeg_name, ffmpeg_ext = os.path.splitext(ffmpeg_exe)
+    ffprobe = os.path.join(ffmpeg_dir, 'ffprobe' + ffmpeg_ext)
+    if os.path.exists(ffprobe):
+        input_probed = probe(input_file, ffprobe=ffprobe)
+    else:
+        input_probed = probe(input_file)
+
     # Process each stream in the input
     stream_types = dict()
     channels_streams = dict()
     stream_resources = {}
-    input_probed = probe(input_file)
     output_format = required_kwargs.get('f')
     output_stream_count = len(input_probed['streams'])
     for stream in input_probed['streams']:
@@ -204,7 +218,7 @@ def convert(
             'disk', set()).add(stereo_stream_idx)
 
     args = (
-        ['ffmpeg', '-hide_banner'] +
+        [ffmpeg, '-hide_banner'] +
         ['-i', input_file] +
         output_args + [output_file, '-y'])
     cmd_line = ' '.join(args)
