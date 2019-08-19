@@ -3,7 +3,7 @@ h264
 -pix_fmt
 yuv420p
 -codec:a
-libfdk_aac
+aac
 -codec:s
 mov_text
 -ac
