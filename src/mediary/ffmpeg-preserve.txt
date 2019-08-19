@@ -3,3 +3,5 @@
 -copy_unknown
 -codec
 copy
+-vsync
+0
